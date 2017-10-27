@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block body_contents %}
+<div class="unswtalk_user_details">
+
+</div>
+
+    <div class="col-sm-2 well">
+        <p><strong>Friends</strong></p>
+        {% for friend in zid_list %}
+        <div class="thumbnail">
+          <a href="/home/{{ friend }}">
+          <img src="/static/img/{{ friend }}.jpg" alt="{{ password_book[friend][1] }}" width="250" height="250">
+          <p><strong>{{ password_book[friend][1] }}</strong></p>
+        </a>
+        </div>      
+        {% endfor %}
+    </div>
+
+<form method="POST" action="">
+    <input type="hidden" name="n" value="7">
+    <input type="submit" value="Next student" class="unswtalk_button">
+</form>
+{% endblock %}
