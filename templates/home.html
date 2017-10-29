@@ -1,23 +1,171 @@
-{% extends "base.html" %}
-
-{% block body_contents %}
-<div class="unswtalk_user_details">
+{% extends "base.html" %} {% block body_contents %}
+<!-- <div class="unswtalk_user_details">
 
 {{student_details}}
 
-</div>
+</div> -->
 
-    <div class="col-sm-2 well">
-        <p><strong>Friends</strong></p>
-        {% for friend in friend_list %}
-        <div class="thumbnail">
-          <a href="/home/{{ friend }}">
-          <img src="/static/img/{{ friend }}.jpg" alt="{{ password_book[friend][1] }}" width="250" height="250">
-          <p><strong>{{ password_book[friend][1] }}</strong></p>
-        </a>
-        </div>      
-        {% endfor %}
+<div class="container text-center">
+    <div class="row">
+        <div class="col-sm-3 well">
+            <div class="well">
+                <p>
+                    <a href="#">Profile</a>
+                </p>
+                <img src="/static/img/{{ zid }}.jpg" class="img-circle" height="65" width="65" alt="Avatar">
+            </div>
+            <div class="well">
+                <p>
+                    <a href="#">Interests</a>
+                </p>
+                <p>
+                    <span class="label label-default">News</span>
+                    <span class="label label-primary">W3Schools</span>
+                    <span class="label label-success">Labels</span>
+                    <span class="label label-info">Football</span>
+                    <span class="label label-warning">Gaming</span>
+                    <span class="label label-danger">Friends</span>
+                </p>
+            </div>
+            <div class="alert alert-success fade in">
+                <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+                <p>
+                    <strong>Ey!</strong>
+                </p>
+                People are looking at your profile. Find out who.
+            </div>
+            <p>
+                <a href="#">Link</a>
+            </p>
+            <p>
+                <a href="#">Link</a>
+            </p>
+            <p>
+                <a href="#">Link</a>
+            </p>
+        </div>
+        <div class="col-sm-7">
+            {% if zid == session['zid'] %}
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="panel panel-default text-left">
+                        <div class="panel-body">
+                            <h4>Make a Post:</h4>
+                            <form role="form" action="{{ url_for('home', zid = zid) }}" method="POST">
+                                <div class="form-group">
+                                    <textarea class="form-control" rows="3" name="post" placeholder="Write your post..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-success pull-right">Submit</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="text-left" style="margin-left:2%">
+                <h4>Timeline:</h4>
+                <br>
+            </div>
+            <div class="row">
+                {% for i in post_lvl1 %}
+                {% set lvl1_loop = loop %}
+                <div class="col-sm-2">
+                    <img src="/static/img/{{ zid }}.jpg" class="img-circle" height="55" width="55" alt="{{ password_book[zid][1] }}">
+                </div>
+                <div class="col-sm-10 text-left">
+                    <h4>
+                        <a href="/home/{{ zid }}">{{ password_book[zid][1] }}</a>
+                        <small>{{ post_lvl1[i][1] }}</small>
+                    </h4>
+                    <p>
+                        {{ post_lvl1[i][0] | nl2br | id2nm}}
+                    </p>
+                    <button class="btn btn-default btn-sm" type="button" data-toggle="collapse" data-target="#comment{{ lvl1_loop.index0 }}" aria-expanded="false" aria-controls="comment">
+                        Comment
+                    </button>
+                    <div class="collapse" id="comment{{ lvl1_loop.index0 }}" style="margin-top:10px;width:90%">
+                        <form role="form" action="{{ url_for('home', zid = zid) }}" method="POST">
+                            <div class="form-group">
+                                <textarea class="form-control" rows="3" name="comment{{ lvl1_loop.index0 }}" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm pull-right">Submit</button>
+                        </form>
+                    </div>
+                    <br> 
+                    {% for j in post_lvl2[i] %}
+                    {% set lvl2_loop = loop %}
+                    <div class="col-sm-2 text-center">
+                        <img src="/static/img/{{ j[2] }}.jpg" class="img-circle" height="45" width="45" alt="{{ password_book[j[2]][1] }}">
+                    </div>
+                    <div class="col-xs-10">
+                        <h5>
+                            <a href="/home/{{ j[2] }}">{{ password_book[j[2]][1] }}</a>
+                            <small>{{ j[1] }}</small>
+                        </h5>
+                        <p>{{ j[0] | nl2br | id2nm }}</p>
+                        <button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#reply{{ lvl1_loop.index0 }}-{{ lvl2_loop.index0 }}" aria-expanded="false" aria-controls="comment">
+                                Reply
+                            </button>
+                            <div class="collapse" id="reply{{ lvl1_loop.index0 }}-{{ lvl2_loop.index0 }}" style="margin-top:10px;width:90%">
+                                <form role="form" action="{{ url_for('home', zid = zid) }}" method="POST">
+                                    <div class="form-group">
+                                        <textarea class="form-control" rows="3" name="reply{{ lvl1_loop.index0 }}-{{ lvl2_loop.index0 }}" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-xs pull-right">Submit</button>
+                                </form>
+                            </div>
+
+                        <br> {% for k in post_lvl3[j[3]] %}
+                        <div class="col-sm-2">
+                            <img src="/static/img/{{ k[2] }}.jpg" class="img-circle" height="35" width="35" alt="{{ password_book[k[2]][1] }}">
+                        </div>
+                        <div class="col-xs-10">
+                            <h6>
+                                <a href="/home/{{ k[2] }}">{{ password_book[k[2]][1] }}</a>
+                                <small>{{ k[1] }}</small>
+                            </h6>
+                            <p>{{ k[0] | nl2br | id2nm }}</p>
+                            <button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#reply{{ lvl1_loop.index0 }}-{{ lvl2_loop.index0 }}" aria-expanded="false" aria-controls="comment">
+                                    Reply
+                                </button>
+                                <div class="collapse" id="reply{{ lvl1_loop.index0 }}-{{ lvl2_loop.index0 }}" style="margin-top:10px;width:90%">
+                                    <form role="form" action="{{ url_for('home', zid = zid) }}" method="POST">
+                                        <div class="form-group">
+                                            <textarea class="form-control" rows="3" name="reply{{ lvl1_loop.index0 }}-{{ lvl2_loop.index0 }}" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-xs pull-right">Submit</button>
+                                    </form>
+                                </div>
+                            <br>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <div class="col-sm-2 well">
+            <p>
+                <strong>Friends</strong>
+            </p>
+            {% for friend in friend_list %}
+            <div class="thumbnail">
+                <a href="/home/{{ friend }}">
+                    <img src="/static/img/{{ friend }}.jpg" alt="{{ password_book[friend][1] }}" width="250" height="250">
+                    <p>
+                        <strong>{{ password_book[friend][1] }}</strong>
+                    </p>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
     </div>
+</div>
 
 <form method="POST" action="">
     <input type="hidden" name="n" value="7">
