@@ -5,30 +5,20 @@
 # as a starting point for COMP[29]041 assignment 2
 # https://cgi.cse.unsw.edu.au/~cs2041/assignments/UNSWtalk/
 
-import os, re, shutil, datetime
+import os, re, shutil, datetime, time
 import logging
 from collections import defaultdict
-from flask import Flask, render_template, session, request, redirect, url_for, escape
+from flask import Flask, flash, render_template, session, request, redirect, url_for, escape
 from jinja2 import evalcontextfilter, Markup, escape
+from werkzeug import secure_filename
 
 students_dir = "dataset-medium";
-
+UPLOAD_FOLDER = os.path.join("static", "img")
 app = Flask(__name__)
+# directory save upload img
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Show unformatted details for student "n"
-# Increment n and store it in the session cookie
-
-# _paragraph_re = re.compile(r'(?:\r\n|\r|\n){2,}')
-# @app.template_filter('nl2br')
-# @evalcontextfilter
-# def nl2br(eval_ctx, value):
-#     result = u'\n\n'.join(u'<p>%s</p>' % p.replace('\\n', Markup('<br>\n'))
-#                           for p in _paragraph_re.split(escape(value)))
-#     if eval_ctx.autoescape:
-#         result = Markup(result)
-#     return result
-
-
+# translate zid into full name with link
 @app.template_filter('id2nm')
 def id2nm_filter(s):
     global password_book
@@ -38,27 +28,51 @@ def id2nm_filter(s):
         s = x
     return escape(s)
 
-
+# translate \n to <br>
 @app.template_filter('nl2br')
 def nl2br_filter(s):
     return escape(s).replace("\\n", Markup('<br>'))
 
-
+# login check the zid and password
 @app.route('/', methods=['GET','POST'])
 @app.route('/login', methods=['GET','POST'])
 def login():
     global password_book
     global friend_list
+    global students_dir
     zid = request.form.get('zid', '')
     zid = re.sub(r'\D', '', zid)
     session['zid'] = zid
     password = request.form.get('password', '')
     print(password)
     if zid in password_book and password == password_book[zid][0]:
+
+        # copy img to static/img 
+        students = sorted(os.listdir(students_dir))
+        for i in range(len(students)):
+            student_to_show = students[i]
+            img_directory = os.path.join("static", "img")
+            img_filename = os.path.join(students_dir, student_to_show, "img.jpg")
+            details_filename = os.path.join(students_dir, student_to_show, "student.txt")
+            file = open(details_filename, 'r')
+            for line in file:
+                a = re.match(r"zid:\sz(\d+)", line)
+                if a:
+                    id = a.group(1)
+            for i in range(len(students)):   
+                if not os.path.exists(img_directory):
+                    os.makedirs(img_directory)
+                dst = os.path.join("static", "img", id+".jpg")
+                try:
+                    shutil.copyfile(img_filename, dst)
+                except FileNotFoundError:
+                    pass
+                    #app.logger.info(img_filename+"doesn't exist.")
+
         return redirect(url_for('.home', zid = zid))
     return render_template('login.html')
 
-
+# home page shows post, comments, replies and friend list
 @app.route('/home/<zid>', methods=['GET','POST'])
 def home(zid):
     if not 'zid' in session:
@@ -102,7 +116,7 @@ def home(zid):
             file.write("message: "+comment+"\n")
             file.write("time: "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S+")+"\n")
             file.close()
-            app.logger.info(filename+" was written.")
+            #app.logger.info(filename+" was written.")
 
         if reply:
             cur_post = author_post[zid][int(key.split('-')[0])]
@@ -120,7 +134,7 @@ def home(zid):
             file.write("message: "+reply+"\n")
             file.write("time: "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S+")+"\n")
             file.close()
-            app.logger.info(filename+" was written.")
+            #app.logger.info(filename+" was written.")
 
         # write new post and savs
         post = request.form.get('post')
@@ -134,7 +148,7 @@ def home(zid):
             file.write("message: "+post+"\n")
             file.write("time: "+datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S+")+"\n")
             file.close()
-            app.logger.info(filename+" was written.")
+            #app.logger.info(filename+" was written.")
     
     # get 3 level post
     post_lvl1 = defaultdict(list)
@@ -182,9 +196,9 @@ def home(zid):
                 post_lvl3[j].append([mes, ti, frm_zid])
     print("postlvl2",post_lvl2)
     return render_template('home.html', friend_list = friend_list[zid], password_book = password_book, \
-                        zid = zid, post_lvl1 = post_lvl1, post_lvl2 = post_lvl2, post_lvl3 = post_lvl3)
+                        zid = zid, post_lvl1 = post_lvl1, post_lvl2 = post_lvl2, post_lvl3 = post_lvl3, time = datetime.datetime.now())
 
-
+# result page of friends and posts
 @app.route('/result', methods=['GET','POST'])
 def result():
     global password_book
@@ -210,14 +224,83 @@ def result():
         print(p_list)
         return render_template('result.html', p_list = p_list, password_book = password_book)
 
+# show profile and can change detail information, upload img
+@app.route('/profile/<zid>', methods=['GET','POST'])
+def profile(zid):
+    global students_dir
+    details_filename = os.path.join(students_dir, 'z'+zid, "student.txt")
+    old_details_filename = os.path.join(students_dir, 'z'+zid, "old_student.txt")
+    if request.form.get('upload', '') == 'Upload' and 'file' in request.files:
+        submitted_file = request.files['file']
+        if submitted_file:
+            filename = secure_filename(zid+".jpg")
+            submitted_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            flash("File uploaded: Thanks!", "success")
+            return redirect(url_for('.profile', zid = zid))
+    elif request.form.get('change', '') == 'Save Changes':
+        # change details
+        full_name = request.form.get('full_name', '')
+        email = request.form.get('email', '')
+        home = request.form.get('home', '')
+        interests = request.form.get('interests', '')
+        print("Im in post !!!!")
+        i = 0
+        os.rename( details_filename, old_details_filename )
+        f = open(details_filename, 'w')
+        source = open(old_details_filename, 'r')
+        for line in source:
+            b = re.match(r"full_name:\s(.+)", line)
+            c = re.match(r"email:\s(.+)", line)
+            d = re.match(r"home_suburb:\s(.+)", line)
+            e = re.match(r"interests:\s(.+)", line)
+            if b and full_name:
+                f.write(line.replace(line, "full_name: "+full_name+os.linesep))
+            elif c and email:
+                f.write(line.replace(line, "email: "+email+os.linesep))
+            elif d and home:
+                f.write(line.replace(line, "home_suburb: "+home+os.linesep))
+            elif e and interests:
+                i = 1
+                f.write(line.replace(line, "interests: "+interests+os.linesep))
+            else:
+                f.write(line)
+        if i == 0:
+            f.write( "interests: "+interests+os.linesep)
+        f.close()
+        source.close()
+        return redirect(url_for('.profile', zid = zid))
 
+    interests = ''
+    home = ''
+    email =''
+    file = open(details_filename, 'r')
+    for line in file:
+        a = re.match(r"zid:\sz(\d+)", line)
+        b = re.match(r"full_name:\s(.+)", line)
+        c = re.match(r"email:\s(.+)", line)
+        d = re.match(r"home_suburb:\s(.+)", line)
+        e = re.match(r"interests:\s(.+)", line)
+        if a:
+            zid = a.group(1)
+        if b:
+            full_name = b.group(1)
+        if c:
+            email = c.group(1)
+        if d:
+            home = d.group(1)
+        if e:
+            interests = e.group(1)
+    profile_list = [zid, full_name, email, home, interests]
+    return render_template('profile.html', zid = zid, profile_list = profile_list, time = datetime.datetime.now())
+
+# log out
 @app.route('/logout', methods=['GET','POST'])
 def logout():
-    # 判断本次请求的session中是否包含有 'username'属性
     if 'zid' in session:
         session.clear()
-    return render_template('login.html')
+    return redirect(url_for('.login'))
 
+# get all posts 
 def getPost(filename):
     mes = None
     ti = None
@@ -237,14 +320,14 @@ def getPost(filename):
         return [mes, ti, frm_zid]
 
 
-# get password of every studens
-password_book = defaultdict()
-friend_list = defaultdict()
-name_to_zid = defaultdict()
-post_list = []
-author_post = defaultdict(list)
-comment1_post = defaultdict(list)
-comment2_post = defaultdict(list)
+
+password_book = defaultdict()   # get password and full name of every studens
+friend_list = defaultdict()     # get friend list
+name_to_zid = defaultdict()     # change full name to zid
+post_list = []                  # get all posts
+author_post = defaultdict(list)     # first level post
+comment1_post = defaultdict(list)   # second level comment
+comment2_post = defaultdict(list)   # third level reply
 students = sorted(os.listdir(students_dir))
 for i in range(len(students)):
     friends = None
@@ -270,14 +353,14 @@ for i in range(len(students)):
         if d:
             full_name = d.group(1)
 
-    # copy img to static/img        
-    if not os.path.exists(img_directory):
-        os.makedirs(img_directory)
-    dst = os.path.join("static", "img", zid+".jpg")
-    try:
-        shutil.copyfile(img_filename, dst)
-    except FileNotFoundError:
-        app.logger.info(img_filename+"doesn't exist.")
+    # # copy img to static/img        
+    # if not os.path.exists(img_directory):
+    #     os.makedirs(img_directory)
+    # dst = os.path.join("static", "img", zid+".jpg")
+    # try:
+    #     shutil.copyfile(img_filename, dst)
+    # except FileNotFoundError:
+    #     app.logger.info(img_filename+"doesn't exist.")
 
     # get posts and comments
     for file in sorted(os.listdir(directory)):

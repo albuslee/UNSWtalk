@@ -5,8 +5,8 @@
     </p>
     {% for friend in zid_list %}
     <div class="thumbnail">
-        <a href="/home/{{ friend }}">
-            <img src="/static/img/{{ friend }}.jpg" alt="{{ password_book[friend][1] }}" width="250" height="250">
+        <a href="home/{{ friend }}">
+            <img src="{{ url_for('static', filename = 'img/'+friend+'.jpg') }}" alt="{{ password_book[friend][1] }}" width="250" height="250">
             <p>
                 <strong>{{ password_book[friend][1] }}</strong>
             </p>
@@ -19,11 +19,11 @@
     <div class="row well">
         {% for i in p_list %}
         <div class="col-sm-2">
-            <img src="/static/img/{{ i[2] }}.jpg" class="img-circle" height="55" width="55" alt="{{ password_book[i[2]][1] }}">
+            <img src="{{ url_for('static', filename = 'img/'+i[2]+'.jpg') }}" class="img-circle" height="55" width="55" alt="{{ password_book[i[2]][1] }}">
         </div>
         <div class="col-sm-10 text-left">
             <h4>
-                <a href="/home/{{ i[2] }}">{{ password_book[i[2]][1] }}</a>
+                <a href="home/{{ i[2] }}">{{ password_book[i[2]][1] }}</a>
                 <small>{{ i[1] }}</small>
             </h4>
             <p>

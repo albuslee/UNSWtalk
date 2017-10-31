@@ -1,0 +1,72 @@
+{% extends "base.html" %} 
+{% block body_contents %} 
+
+<div class="container">
+        <h1>Edit Profile</h1>
+          <hr>
+        <div class="row">
+          <!-- left column -->
+          <div class="col-md-3">
+            <div class="text-center">
+              <img src="{{ url_for('static', filename = 'img/'+zid+'.jpg',time=time) }}" class="avatar img-circle" height="100" width="100" alt="avatar">
+              {% if zid == session['zid'] %}
+              <h6>Upload a different photo...</h6>
+              <form action="" method="POST" enctype=multipart/form-data>
+              <input type="file" name="file" class="form-control">
+              <input type="submit" name="upload" value=Upload>
+            </form>
+            {% endif %}
+            </div>
+          </div>
+          
+          <!-- edit form column -->
+          <div class="col-md-9 personal-info">
+            <h3>Personal info</h3>
+            
+            <form class="form-horizontal" role="form" action="{{ url_for('profile', zid = zid) }}" method="POST">
+              <div class="form-group">
+                <label class="col-lg-3 control-label">zID:</label>
+                <div class="col-lg-8">
+                  <input class="form-control" type="text" name="zid" value="{{ profile_list[0] }}" disabled="disabled">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-lg-3 control-label">Full name:</label>
+                <div class="col-lg-8">
+                  <input class="form-control" type="text" name="full_name" value="{{ profile_list[1] }}" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-lg-3 control-label">Email:</label>
+                <div class="col-lg-8">
+                  <input class="form-control" type="text" name="email" value="{{ profile_list[2] }}" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-lg-3 control-label">Home:</label>
+                <div class="col-lg-8">
+                  <input class="form-control" type="text" name="home" value="{{ profile_list[3] }}">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-lg-3 control-label">Interests:</label>
+                <div class="col-lg-8">
+                    <input class="form-control" type="text" name="interests" value="{{ profile_list[4] }}">
+                </div>
+              </div>
+             
+              <div class="form-group">
+                <label class="col-md-3 control-label"></label>
+                {% if zid == session['zid'] %}
+                <div class="col-md-8">
+                  <input type="submit" class="btn btn-primary" name="change" value="Save Changes">
+                  <span></span>
+                </div>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+      </div>
+    </div>
+    <hr>
+ {% endblock %}
